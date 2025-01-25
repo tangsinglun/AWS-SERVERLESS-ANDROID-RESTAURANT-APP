@@ -1,0 +1,403 @@
+# org: programming.website@outlook.com
+# app: Restaurant-app
+
+service:
+  name: serverless-eat-restaurant-app
+  
+
+plugins:
+  - serverless-webpack
+  - serverless-reqvalidator-plugin
+  - serverless-aws-documentation
+  - serverless-iam-roles-per-function
+
+provider:
+  name: aws
+  runtime: nodejs12.x 
+
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-2'}
+
+  # profile: projectDev
+
+  environment:
+    USERS_RESTAURANT_TABLE: "Users-serverless-${self:provider.stage}"
+    USER_INDEX: UserIndex
+    USER_PHONE_PASSWORD_INDEX: UserPhonePasswordIndex
+    FOOD_RESTAURANT_TABLE: "Food-serverless-${self:provider.stage}"
+    FOOD_INDEX: FoodIndex
+    SIGNED_URL_EXPIRATION: 300
+    EAT_RESTAURANT_S3_BUCKET: "serverless-alan-eat-restaurant-${self:provider.stage}"
+    BUCKET_REGION: ${self:provider.region}
+
+custom: 
+  webpack:
+    webpackConfig: ./webpack.config.js
+    # includeModules: true  
+  documentation:
+    api:
+      info:
+        version: "2"
+        title: "Eat Restaurant API"
+        description: "Serverless application for Eat Restaurant"
+    models:
+      - 
+        name: UploadRequest
+        description: "Model for Eat Restaurant Request"
+        contentType: application/json
+        schema: ${file(models/create-upload-request.json)}      
+      - 
+        name: UserRequest
+        description: "Model for Eat Restaurant Request"
+        contentType: application/json
+        schema: ${file(models/create-user-request.json)}
+      - 
+        name: UpdateUserRequest
+        description: "Model for Eat Restaurant Request"
+        contentType: application/json
+        schema: ${file(models/update-user-request.json)}
+      - 
+        name: FoodRequest
+        description: "Model for Eat Restaurant Request"
+        contentType: application/json
+        schema: ${file(models/create-food-request.json)}
+      - 
+        name: UpdateFoodRequest
+        description: "Model for Eat Restaurant Request"
+        contentType: application/json
+        schema: ${file(models/update-food-request.json)}                  
+
+functions:
+
+  CreateFood:
+    handler: src/lambda/http/createFood.handler
+    events:
+      - http:
+          path: /createfood/{foodId}
+          method: post
+          cors: true          
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Create a new food
+            description: Create a new food
+            requestModels:
+              'application/json': FoodRequest                
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_RESTAURANT_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_RESTAURANT_TABLE}/index/${self:provider.environment.USER_INDEX}" 
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_RESTAURANT_TABLE}/index/${self:provider.environment.USER_PHONE_PASSWORD_INDEX}"                 
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FOOD_RESTAURANT_TABLE}" 
+
+  CreateUser:
+    handler: src/lambda/http/createUser.handler
+    events:
+      - http:
+          path: /createuser
+          method: post
+          cors: true          
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Create a new user
+            description: Create a new user
+            requestModels:
+              'application/json': UserRequest                
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Scan
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_RESTAURANT_TABLE}"                
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_RESTAURANT_TABLE}"        
+
+  EditFood:
+    handler: src/lambda/http/editFood.handler
+    events:
+      - http:
+          path: /editfood/{foodId}
+          method: post
+          cors: true          
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Edit a food
+            description: Edit a food
+            requestModels:
+              'application/json': FoodRequest                
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_RESTAURANT_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_RESTAURANT_TABLE}/index/${self:provider.environment.USER_INDEX}" 
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_RESTAURANT_TABLE}/index/${self:provider.environment.USER_PHONE_PASSWORD_INDEX}"                 
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FOOD_RESTAURANT_TABLE}"   
+        
+  DeleteFood:
+    handler: src/lambda/http/deleteFoodItem.handler
+    events:
+      - http:
+          path: /deletefood/{foodId}
+          method: post          
+          cors: true          
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_RESTAURANT_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_RESTAURANT_TABLE}/index/${self:provider.environment.USER_INDEX}" 
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_RESTAURANT_TABLE}/index/${self:provider.environment.USER_PHONE_PASSWORD_INDEX}"       
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FOOD_RESTAURANT_TABLE}"          
+        
+  uploadIamgeToS3:
+    handler: src/lambda/http/uploadIamgeToS3.handler
+    events:
+      - http:
+          path: /food/{foodId}
+          method: post          
+          cors: true
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Upload a new Image
+            description: Upload a new Image
+            requestModels:
+              'application/json': UploadRequest            
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+        Resource: "arn:aws:s3:::${self:provider.environment.EAT_RESTAURANT_S3_BUCKET}/*"          
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_RESTAURANT_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_RESTAURANT_TABLE}/index/${self:provider.environment.USER_INDEX}"  
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_RESTAURANT_TABLE}/index/${self:provider.environment.USER_PHONE_PASSWORD_INDEX}"          
+        
+  VerifyUsers:
+    handler: src/lambda/http/getUsers.handler
+    events:
+      - http:
+          path: /users
+          method: post          
+          cors: true
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Get User
+            description: Get a User
+            requestModels:
+              'application/json': UserRequest                              
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_RESTAURANT_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_RESTAURANT_TABLE}/index/${self:provider.environment.USER_INDEX}" 
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_RESTAURANT_TABLE}/index/${self:provider.environment.USER_PHONE_PASSWORD_INDEX}"         
+
+  getFoodItems:
+    handler: src/lambda/http/getFoodItems.handler
+    events:
+      - http:
+          path: /getfoods/{foodId}
+          method: get          
+          cors: true                                      
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_RESTAURANT_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_RESTAURANT_TABLE}/index/${self:provider.environment.USER_INDEX}" 
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_RESTAURANT_TABLE}/index/${self:provider.environment.USER_PHONE_PASSWORD_INDEX}"      
+      - Effect: Allow
+        Action:
+          - dynamodb:Scan
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FOOD_RESTAURANT_TABLE}"  
+        
+  getMaxId:
+    handler: src/lambda/http/getMaxId.handler
+    events:
+      - http:
+          path: /getmaxid
+          method: get          
+          cors: true                                      
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_RESTAURANT_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_RESTAURANT_TABLE}/index/${self:provider.environment.USER_INDEX}" 
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_RESTAURANT_TABLE}/index/${self:provider.environment.USER_PHONE_PASSWORD_INDEX}"      
+      - Effect: Allow
+        Action:
+          - dynamodb:Scan
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FOOD_RESTAURANT_TABLE}"         
+
+resources:
+  Resources:
+    GatewayResponseDefault4XX:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,OPTIONS,POST'"
+        ResponseType: DEFAULT_4XX
+        RestApiId:
+          Ref: ApiGatewayRestApi
+
+    UserDynamoDBTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.USERS_RESTAURANT_TABLE}
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S 
+          - AttributeName: phone
+            AttributeType: S  
+          - AttributeName: password_hash
+            AttributeType: S                  
+        KeySchema:
+          - AttributeName: phone
+            KeyType: HASH  
+          - AttributeName: password_hash
+            KeyType: RANGE                                                
+        StreamSpecification:
+          StreamViewType: NEW_IMAGE
+        GlobalSecondaryIndexes:
+          - IndexName: ${self:provider.environment.USER_INDEX}
+            KeySchema:
+            - AttributeName: userId
+              KeyType: HASH  
+            Projection:
+              ProjectionType: ALL 
+          - IndexName: ${self:provider.environment.USER_PHONE_PASSWORD_INDEX}
+            KeySchema:
+            - AttributeName: phone
+              KeyType: HASH 
+            - AttributeName: password_hash
+              KeyType: RANGE                          
+            Projection:
+              ProjectionType: ALL 
+        BillingMode: PAY_PER_REQUEST   
+        
+    FoodDynamoDBTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.FOOD_RESTAURANT_TABLE}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S                   
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH                                                 
+        StreamSpecification:
+          StreamViewType: NEW_IMAGE
+        GlobalSecondaryIndexes:
+          - IndexName: ${self:provider.environment.FOOD_INDEX}
+            KeySchema:
+            - AttributeName: id
+              KeyType: HASH  
+            Projection:
+              ProjectionType: ALL  
+        BillingMode: PAY_PER_REQUEST         
+        
+    RequestBodyValidator:
+      Type: AWS::ApiGateway::RequestValidator
+      Properties:
+        Name: 'request-body-validator'
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        ValidateRequestBody: true
+        ValidateRequestParameters: false  
+
+    S3BucketEatRestaurant:
+      Type: AWS::S3::Bucket 
+      Properties:
+        BucketName: ${self:provider.environment.EAT_RESTAURANT_S3_BUCKET}                                        
+        CorsConfiguration:
+          CorsRules:
+            -
+              AllowedOrigins:
+                - '*'
+              AllowedHeaders:
+                - '*'
+              AllowedMethods:
+                - GET
+                - PUT
+                - POST
+                - DELETE
+                - HEAD
+              MaxAge: 3000
+
+    BucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        PolicyDocument:
+          Id: MyPolicy
+          Version: "2012-10-17"
+          Statement:
+            - Sid: PublicReadForGetBucketObjects
+              Effect: Allow
+              Principal: '*'
+              Action: 
+                - "s3:GetObject"
+                - "s3:PutObject"
+                - "s3:DeleteObject"
+              Resource: 'arn:aws:s3:::${self:provider.environment.EAT_RESTAURANT_S3_BUCKET}/*'
+        Bucket: !Ref S3BucketEatRestaurant                       
+      

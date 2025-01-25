@@ -1,0 +1,18 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema",
+    "title": "food",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string"
+        },        
+        "file": {
+            "type": "object"
+        }
+    },
+    "required": [
+        "id",
+        "file"
+    ],
+    "additionalProperties": false
+}

@@ -1,0 +1,30 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema",
+    "title": "user",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string"
+        },
+        "password_hash": {
+            "type":"string"
+        },
+        "phone": {
+            "type":"string"
+        },
+        "isStaff": {
+            "type":"boolean"
+        },
+        "secureCode": {
+            "type":"string"
+        }
+    },
+    "required": [
+        "name",
+        "password_hash",
+        "phone",
+        "isStaff",
+        "secureCode"
+    ],
+    "additionalProperties": false
+}
