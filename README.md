@@ -47,7 +47,7 @@ For this project we will uses Window 10 Professional as the developement and pro
 
 * Clone the Project
     * Type in the following command to clone the Project.
-      `git clone https://github.com/singlun/Andorid-AWS-Serverless-Restaurant-App.git`  
+      `git clone https://github.com/tangsinglun/AWS-SERVERLESS-ANDROID-RESTAURANT-APP.git`  
 
 And that is it! We have setup an environment for the Restaurant App. Next we will config the project for the Production Mode and deploy it to the AWS.
 
